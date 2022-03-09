@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>卒業制作テスト</title>
+</head>
+<body>
+    <h1>ジャイロをオンにして傾けると音が出ます。爆音注意</h1>
+    <h1>Var.1.2</h1>
+    <h1>Buffer source</h1>
+    <button id="playbtn">Play</button><br/>
+    <h1>ジャイロセンサー</h1>
+    <ul>
+        <input type="button" id="permit" value="Safariでジャイロセンサーを許可"/>
+        <li>【beta】<span id="beta"></span></li>
+        <li>【gamma】<span id="gamma"></span></li>
+    </ul>
+    
+<script>
+
+ // 簡易OS判定
+function detectOSSimply() {
+    let ret;
+    if (
+        navigator.userAgent.indexOf("iPhone") > 0 ||
+        navigator.userAgent.indexOf("iPad") > 0 ||
+        navigator.userAgent.indexOf("iPod") > 0
+        ) {
+// iPad OS13のsafariはデフォルト「Macintosh」なので別途要対応
+            ret = "iphone";
+            
+        } else if (navigator.userAgent.indexOf("Android") > 0) {
+            ret = "android";
+            
+        } else {
+            ret = "pc";
+        }
+    return ret;
+}
+  // iPhone + Safariの場合はDeviceOrientation APIの使用許可をユーザに求める
+function permitDeviceOrientationForSafari() {
+    DeviceOrientationEvent.requestPermission()
+    .then(response => {
+        if (response === "granted") {
+            window.addEventListener(
+                "deviceorientation",
+                detectDirection
+            );
+                        }
+        })
+    .catch(console.error);
+}  
+
+// OS識別用
+let os;
+// DOM構築完了イベントハンドラ登録
+window.addEventListener("DOMContentLoaded", init);
+// 初期化
+function init() {
+ // OS判定
+    os = detectOSSimply();
+    if (os == "iphone") {
+// safari用。DeviceOrientation APIの使用をユーザに許可して貰う
+        document.querySelector("#permit").addEventListener("click", permitDeviceOrientationForSafari);
+        window.addEventListener(
+        "deviceorientation",
+        orientation,true
+        );
+        
+    } else if (os == "android") {
+        window.addEventListener(
+        "deviceorientationabsolute",
+        orientation,true
+        );
+        
+   } 
+}
+    
+   // ジャイロスコープがある機種のページ遷移
+function orientation(event) {
+    let beta = Math.floor(event.beta);
+    let gamma = Math.floor(event.gamma);
+    document.querySelector("#beta").innerHTML = beta;
+    document.querySelector("#gamma").innerHTML = gamma;
+    
+    let timerid;
+        
+    if (gamma > 30) {
+        document.getElementById("playbtn").click()//何回も猫の声が泣いちゃうので１回だけにしたい
+        timerid = window.setTimeout(function(){
+        window.location.href = 'design.html'; // 遷移
+        }, 3000);
+        
+        
+        
+    } else if (gamma < -30) {
+        timerid = window.setTimeout(function(){
+        window.location.href = 'compose.html'; // 遷移
+        }, 3000);
+        
+    } else {
+        window.clearTimeout(timerid);
+        document.getElementById('playbtn').disabled = false;
+    }
+    
+}
+
+   
+
+
+
+//音のイベントリスト
+window.addEventListener("load", async ()=>{
+    const audioctx = new AudioContext();
+    const sound = await LoadSample(audioctx, "cuisine.mp3");
+
+    document.getElementById("playbtn").addEventListener("click",()=>{
+        const src = new AudioBufferSourceNode(audioctx, {buffer:sound});
+        src.connect(audioctx.destination);
+        src.start();
+    });
+
+    function LoadSample(actx, url) {
+        return new Promise((resolv)=>{
+            fetch(url).then((response)=>{
+                return response.arrayBuffer();
+            }).then((arraybuf)=>{
+                return actx.decodeAudioData(arraybuf);
+            }).then((buf)=>{
+                resolv(buf);
+            })
+        });
+    }
+});
+    
+    
+    
+    
+</script>
+
+</body>
+</html>
