@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <style>
+  	body{
+  		height: 100vh;
+  	}
+  </style>
+  <title>サンプル</title>
+  <link rel="stylesheet" href="pointer.css">
+  </head>
+  <body>
+     <p>マウスを動かすと以下の値が更新されます。</p>
+  <div id="result">
+    <ul>
+      <li class="clientx">clientX: <b>987</b></li>
+      <li class="clienty">clientY: <b>595</b></li>
+    </ul>
+  </div>
+  
+  <h1>Buffer source</h1>
+   <div class="flex">
+    <div id="play" class="playarea">Play</div>
+    <div id="stop" class="playarea">stop</div>
+    <div id="play2" class="playarea">Play</div>
+  </div>
+  
+  
+<script>
+
+
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+const ctx = new AudioContext();
+
+let sampleSource;
+let sampleSource2;
+// 再生中のときはtrue
+let PlayCAT = false;
+let PlayCUI = false;
+
+// 音源を取得しAudioBuffer形式に変換して返す関数
+async function setupSampleCAT() {
+  const response = await fetch("./cat.mp3");
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+}
+// AudioBufferをctxに接続し再生する関数
+function playSampleCAT(ctx, audioBuffer) {
+  sampleSource = ctx.createBufferSource();
+  sampleSource.buffer = audioBuffer;
+  sampleSource.connect(ctx.destination);
+  sampleSource.start();
+  PlayCAT = true;
+}
+
+async function setupSampleCUI() {
+  const response = await fetch("./cuisine.mp3");
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+}
+function playSampleCUI(ctx, audioBuffer) {
+  sampleSource = ctx.createBufferSource();
+  sampleSource.buffer = audioBuffer;
+  sampleSource.connect(ctx.destination);
+  sampleSource.start();
+  PlayCUI = true;
+}
+
+ async function play(){
+  if (PlayCAT) return;
+  const sample = await setupSampleCAT();
+  playSampleCAT(ctx, sample);
+};
+async function play2() {
+  if (PlayCUI) return;
+  const sample2 = await setupSampleCUI();
+  playSampleCUI(ctx, sample2);
+};
+
+async function stop() {
+  sampleSource?.stop();
+  PlayCAT = false;
+  PlayCUI = false;
+};
+document.querySelector("#play").addEventListener("mouseenter",  () => {
+ play()
+});
+document.querySelector("#play2").addEventListener("mouseenter", () => {
+   play2()
+});
+
+document.querySelector("#stop").addEventListener("mouseenter", () => {
+  stop()
+});
+  </script>
+  </body>
