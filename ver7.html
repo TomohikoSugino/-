@@ -1,0 +1,170 @@
+<<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <style>
+  	body{
+  		height: 100vh;
+  	}
+  </style>
+  <title>サンプル</title>
+  <link rel="stylesheet" href="boolean.css">
+  </head>
+  <body>
+     <p>マウスを動かすと以下の値が更新されます。</p>
+  <div id="result">
+    <ul>
+      <li class="clientx">clientX: <b>987</b></li>
+      <li class="clienty">clientY: <b>595</b></li>
+    </ul>
+  </div>
+  
+  <h1>ジャイロセンサー</h1>
+    <ul>
+        <input type="button" id="permit" value="Safariでジャイロセンサーを許可"/>
+        <li>【beta】<span id="beta"></span></li>
+        <li>【gamma】<span id="gamma"></span></li>
+    </ul>
+   <script>
+// OS識別用
+let os;
+// DOM構築完了イベントハンドラ登録
+window.addEventListener("DOMContentLoaded", init);
+// 初期化
+function init() {
+// 簡易的なOS判定
+os = detectOSSimply();
+if (os == "iphone") {
+// safari用。DeviceOrientation APIの使用をユーザに許可して貰う
+    document.querySelector("#permit").addEventListener("click", permitDeviceOrientationForSafari);
+    window.addEventListener(
+      "deviceorientation",
+      orientation,true
+    );
+  } else if (os == "android") {
+    window.addEventListener(
+      "deviceorientationabsolute",
+      orientation,true
+    );
+  } else{
+    window.alert("PC未対応サンプル");
+  }
+}
+// 簡易OS判定
+function detectOSSimply() {
+  let ret;
+  if (
+    navigator.userAgent.indexOf("iPhone") > 0 ||
+    navigator.userAgent.indexOf("iPad") > 0 ||
+    navigator.userAgent.indexOf("iPod") > 0
+    ) {
+// iPad OS13のsafariはデフォルト「Macintosh」なので別途要対応
+      ret = "iphone";
+    } else if (navigator.userAgent.indexOf("Android") > 0) {
+      ret = "android";
+    } else {
+      ret = "pc";
+    }
+  return ret;
+}
+// iPhone + Safariの場合はDeviceOrientation APIの使用許可をユーザに求める
+function permitDeviceOrientationForSafari() {
+  DeviceOrientationEvent.requestPermission()
+    .then(response => {
+      if (response === "granted") {
+        window.addEventListener(
+            "deviceorientation",
+            detectDirection
+        );
+      }
+    })
+  .catch(console.error);
+}
+
+
+
+
+
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+const ctx = new AudioContext();
+
+let sampleSource;
+// 再生中のときはtrue
+let PlayCAT = false;
+let PlayCUI = false;
+
+// 音源を取得しAudioBuffer形式に変換して返す関数
+async function setupSampleCAT() {
+  const response = await fetch("./cat.mp3");
+  const arrayBuffer = await response.arrayBuffer();
+  // Web Audio APIで使える形式に変換
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+}
+// AudioBufferをctxに接続し再生する関数
+function playSampleCAT(ctx, audioBuffer) {
+  sampleSource = ctx.createBufferSource();
+  // 変換されたバッファーを音源として設定
+  sampleSource.buffer = audioBuffer;
+  // 出力につなげる
+  sampleSource.connect(ctx.destination);
+  sampleSource.start();
+  PlayCAT = true;
+}
+
+async function setupSampleCUI() {
+  const response = await fetch("./cuisine.mp3");
+  const arrayBuffer = await response.arrayBuffer();
+  // Web Audio APIで使える形式に変換
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+}
+function playSampleCUI(ctx, audioBuffer) {
+  sampleSource = ctx.createBufferSource();
+  // 変換されたバッファーを音源として設定
+  sampleSource.buffer = audioBuffer;
+  // 出力につなげる
+  sampleSource.connect(ctx.destination);
+  sampleSource.start();
+  PlayCUI = true;
+}
+
+
+ async function play(){
+  // 再生中なら二重に再生されないようにする
+  if (PlayCAT) return;
+  const sample1 = await setupSampleCAT();
+  playSampleCAT(ctx, sample1);
+};
+async function play2() {
+  // 再生中なら二重に再生されないようにする
+  if (PlayCUI) return;
+  const sample2 = await setupSampleCUI();
+  playSampleCUI(ctx, sample2);
+};
+
+// oscillatorを破棄し再生を停止する
+async function stop() {
+  sampleSource?.stop();
+  PlayCAT = false;
+  PlayCUI = false;
+};
+
+// ジャイロスコープと地磁気をセンサーから取得
+function orientation(event) {
+  let beta = Math.floor(event.beta);
+  let gamma = Math.floor(event.gamma);
+  document.querySelector("#beta").innerHTML = beta;
+  document.querySelector("#gamma").innerHTML = gamma;
+  
+  if (gamma > 30){
+    play()
+  }else if (gamma < -30){
+    play2()
+  }else {
+    (gamma < 29 || gamma > -29)
+  }
+}
+  </script>
+  </body>
+  </html>
