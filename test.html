@@ -26,7 +26,7 @@ window.AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioctx = new AudioContext();
 const panner = new PannerNode(audioctx, {panningModel:"HRTF"});
 
-const sound = await LoadSample(audioctx, "./cat.mp3");
+const sound = LoadSample(audioctx, "./cat.mp3");
 
 let PlayCAT = false;
 
